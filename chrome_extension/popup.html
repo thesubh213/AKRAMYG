@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AKRAMYG Sensor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #F5F2EB;       /* Warm Beige background */
+      --bg-card: #FAF8F5;       /* Light pure beige card */
+      --accent: #C05A3E;        /* Burnt Sienna */
+      --accent-hover: #A0442A;  /* Deep Terracotta hover */
+      --text: #2E2724;          /* Warm Earth dark text */
+      --text-muted: #8A7B76;    /* Muted warm grey-brown */
+      --success: #27AE60;       /* Soft Forest green */
+      --error: #C0392B;         /* Earthy brick red */
+      --border: #EBE5DA;        /* Light sand border */
+    }
+
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    h3 {
+      margin-top: 0;
+      margin-bottom: 4px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h3 span {
+      background: linear-gradient(135deg, var(--text), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(46, 39, 36, 0.04);
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .status-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-connected {
+      background-color: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .status-disconnected {
+      background-color: var(--error);
+      box-shadow: 0 0 6px var(--error);
+    }
+
+    .badge {
+      background-color: rgba(192, 90, 62, 0.12);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .btn {
+      width: 100%;
+      background-color: var(--accent);
+      color: #FAF8F5;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-secondary {
+      background-color: #EBE5DA;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background-color: #DDD5C5;
+      transform: translateY(-0.5px);
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"], input[type="password"] {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      flex-grow: 1;
+      width: 100%;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+    
+    input[type="text"]:focus, input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Toggle switch styling */
+    .switch-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .switch-container label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border);
+      transition: .4s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #FAF8F5;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+    input:checked + .slider:before {
+      transform: translateX(14px);
+    }
+
+    /* Tab navigation style additions */
+    .tabs-nav {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 12px;
+      gap: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Sync logs styling */
+    .console-log {
+      font-family: monospace;
+      font-size: 9px;
+      background-color: #FAF8F5;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px;
+      max-height: 90px;
+      overflow-y: auto;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .console-log-line {
+      margin-bottom: 3px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 2px;
+    }
+    .console-log-error {
+      color: var(--error);
+    }
+
+    #summary-area {
+      font-size: 12px;
+      line-height: 1.5;
+      background-color: #EBE5DA;
+      color: var(--text);
+      border: 1px solid #DDD5C5;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .detected-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11px;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .detected-item input[type="checkbox"] {
+      margin: 2px 0 0 0;
+      flex-shrink: 0;
+      accent-color: var(--accent);
+    }
+    .detected-item-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .detected-item-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .detected-item-date {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .footer {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 16px;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+  <h3>
+    <span>AKRAMYG Sensor</span>
+    <span id="focus-badge" class="badge" style="display:none;">FOCUSING</span>
+  </h3>
+  <div class="subtitle">Local-First Context & Capture Sensor</div>
+
+  <!-- Tabs Navigation Header -->
+  <div class="tabs-nav">
+    <div class="tab-btn active" id="tab-btn-capture">Capture</div>
+    <div class="tab-btn" id="tab-btn-focus">Focus</div>
+    <div class="tab-btn" id="tab-btn-sync">Sync & Logs</div>
+  </div>
+
+  <!-- TAB 1: CAPTURE -->
+  <div class="tab-content active" id="tab-content-capture">
+    <!-- Status Card -->
+    <div class="card">
+      <div class="status-row">
+        <span>Android Core Connection</span>
+        <span style="display: flex; align-items: center;">
+          <span id="status-dot" class="status-dot status-disconnected"></span>
+          <span id="status-text">Checking...</span>
+        </span>
+      </div>
+      <div class="status-row" id="active-task-row" style="margin-top: 8px;">
+        <span>Active Task</span>
+        <span id="active-task-title" style="font-weight: 700; color: var(--accent);">None</span>
+      </div>
+    </div>
+
+    <!-- Detection & Manual Capture Card -->
+    <div class="card" id="detection-card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+        <span>Page Detection</span>
+        <button id="btn-scan" style="background:none; border:none; color:var(--accent); font-weight:700; cursor:pointer; font-size:10px; padding:0; text-transform:uppercase;">Scan Page</button>
+      </div>
+      
+      <!-- Auto-detected Items Container -->
+      <div id="detected-items-container" style="display: none; max-height: 120px; overflow-y: auto; margin-bottom: 10px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Check items to import to AKRAMYG:</div>
+        <div id="detected-list"></div>
+        <button id="btn-sync-detected" class="btn" style="padding: 6px; font-size: 11px; margin-top: 6px; margin-bottom: 0;">Sync Checked Items</button>
+      </div>
+
+      <!-- Fallback Manual Entry Container -->
+      <div id="manual-fallback-container">
+        <div id="fallback-message" style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">No deadlines auto-detected. Add manually:</div>
+        <div class="form-group">
+          <input type="text" id="manual-task-title" placeholder="Task description (e.g. Do homework)" style="padding: 6px; font-size: 12px;">
+        </div>
+        <div class="form-row" style="margin-top: 6px;">
+          <div style="flex: 2;">
+            <input type="text" id="manual-task-date" placeholder="Due Date (optional)" style="padding: 6px; font-size: 12px;" onfocus="(this.type='date')" onblur="(this.type='text')">
+          </div>
+          <div style="flex: 1;">
+            <button id="btn-add-manual" class="btn" style="padding: 6px; font-size: 12px; margin-bottom: 0; height: 100%;">Add Task</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <button id="btn-attach" class="btn">Attach Page to Active Task</button>
+    <button id="btn-capture" class="btn btn-secondary">Create Task from Page</button>
+    <button id="btn-summarize" class="btn btn-secondary">Summarize Current Page</button>
+    <div id="summary-area"></div>
+  </div>
+
+  <!-- TAB 2: FOCUS CONTROLLER -->
+  <div class="tab-content" id="tab-content-focus">
+    <!-- Active Focus Info -->
+    <div class="card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Session Activity</div>
+      <div class="status-row">
+        <span>Blocked Distractions (Session)</span>
+        <span id="distraction-count-badge" class="badge" style="background-color: rgba(192, 57, 43, 0.12); color: var(--error);">0 times</span>
+      </div>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Recent Blocked Logs:</div>
+      <div id="distraction-logs-feed" style="font-family: monospace; font-size: 9px; padding: 6px; background-color: var(--bg-dark); border: 1px solid var(--border); border-radius: 4px; max-height: 70px; overflow-y: auto;">
+        No distractions blocked yet in this session.
+      </div>
+    </div>
+
+    <!-- Custom Blocklist -->
+    <div class="card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Custom Distraction Blocklist</div>
+      <div class="form-group">
+        <label for="blocklist-domains">Blocklist Domains (Comma-separated)</label>
+        <textarea id="blocklist-domains" style="width: 100%; height: 50px; background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 6px; box-sizing: border-box; font-family: inherit; font-size: 11px; resize: none;"></textarea>
+      </div>
+      <button id="btn-save-blocklist" class="btn btn-secondary" style="margin-bottom: 0; padding: 6px; font-size: 11px;">Save Blocklist Settings</button>
+    </div>
+  </div>
+
+  <!-- TAB 3: CONFIG & SYNC LOGS -->
+  <div class="tab-content" id="tab-content-sync">
+    <!-- Local Sync Settings -->
+    <div class="card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Android Core Address</div>
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label for="ip-address">IP Address</label>
+          <input type="text" id="ip-address" placeholder="192.168.x.x">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="port">Port</label>
+          <input type="text" id="port" placeholder="8080" value="8080">
+        </div>
+      </div>
+      <button id="btn-save-settings" class="btn btn-secondary" style="margin-bottom: 0; padding: 8px;">Save & Reconnect</button>
+    </div>
+
+    <!-- Cloud Relay Settings -->
+    <div class="card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Encrypted Cloud Relay</div>
+      <div class="switch-container">
+        <label for="cloud-relay-enabled">Enable Cloud Relay Sync</label>
+        <label class="switch">
+          <input type="checkbox" id="cloud-relay-enabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="form-group" style="margin-top: 8px;">
+        <label for="relay-url">Relay Server URL</label>
+        <input type="text" id="relay-url" placeholder="http://192.168.x.x:8080/relay">
+      </div>
+      <div class="form-group">
+        <label for="relay-pairing-key">Pairing Secret Key (Passphrase)</label>
+        <input type="password" id="relay-pairing-key" placeholder="Enter key...">
+      </div>
+      <button id="btn-save-relay-settings" class="btn btn-secondary" style="margin-bottom: 0; padding: 8px; margin-top: 6px;">Save Relay Config</button>
+    </div>
+
+    <!-- Terminal Sync Logs Card -->
+    <div class="card">
+      <div style="font-size: 11px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+        <span>Sync Connection Logs</span>
+        <button id="btn-clear-logs" style="background:none; border:none; color:var(--error); font-weight:700; cursor:pointer; font-size:9px; padding:0; text-transform:uppercase;">Clear</button>
+      </div>
+      <div id="sync-console-log" class="console-log">No sync operations logged yet.</div>
+      <button id="btn-sync-now" class="btn" style="padding: 6px; font-size: 11px; margin-top: 8px; margin-bottom: 0;">Force Sync Now</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    AKRAMYG Sync • v1.1.0
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

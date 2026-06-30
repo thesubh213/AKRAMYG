@@ -1,0 +1,16 @@
+{
+  "name": "akramyg-chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome Extension sensor and capture client for AKRAMYG execution assistant",
+  "main": "dist/background.js",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "test": "esbuild src/test_queue.ts --bundle --platform=node --outfile=dist/test_queue.js && node dist/test_queue.js"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
+  }
+}
