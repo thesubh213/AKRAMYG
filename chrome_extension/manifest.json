@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "AKRAMYG Execution Sensor",
+  "version": "1.0.0",
+  "description": "Observes browser context and captures deadlines/tasks for the AKRAMYG Execution Assistant.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://192.168.*/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AKRAMYG Actions"
+  }
+}
