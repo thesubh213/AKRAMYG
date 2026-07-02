@@ -46,6 +46,74 @@ async function clearBypasses() {
   await chrome.storage.local.set({ bypassedTabs: {} });
 }
 
+async function discoverAndroidIp(): Promise<string | null> {
+  const subnets = ['192.168.1', '192.168.0', '192.168.2', '192.168.100', '10.0.0', '172.16.0'];
+  
+  // Try existing config IP first
+  const config = await getConfig();
+  if (config.androidIp) {
+    const parts = config.androidIp.split('.');
+    if (parts.length === 4) {
+      const activeSubnet = `${parts[0]}.${parts[1]}.${parts[2]}`;
+      if (!subnets.includes(activeSubnet)) {
+        subnets.unshift(activeSubnet);
+      }
+    }
+  }
+
+  console.log('Initiating automatic IP discovery scan on subnets:', subnets);
+
+  for (const subnet of subnets) {
+    const promises: Promise<string>[] = [];
+    const controllers: AbortController[] = [];
+
+    for (let i = 1; i <= 254; i++) {
+      const ip = `${subnet}.${i}`;
+      const controller = new AbortController();
+      controllers.push(controller);
+
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+      const fetchPromise = fetch(`http://${ip}:8080/status`, {
+        signal: controller.signal,
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      })
+      .then(async (res) => {
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const status = await res.json();
+          if (status.isConnected) {
+            return ip;
+          }
+        }
+        throw new Error('Not the sync server');
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        return '';
+      });
+
+      promises.push(fetchPromise);
+    }
+
+    try {
+      const results = await Promise.all(promises);
+      const foundIp = results.find(ip => ip !== '');
+      if (foundIp) {
+        controllers.forEach(c => c.abort());
+        console.log('Found Android Core Sync Server at:', foundIp);
+        return foundIp;
+      }
+    } catch (e) {
+      // Abort remaining on error
+      controllers.forEach(c => c.abort());
+    }
+  }
+
+  return null;
+}
+
 async function completeSubtask(subtaskId: string): Promise<{ success: boolean; message: string }> {
   const config = await getConfig();
   const url = `http://${config.androidIp}:${config.androidPort}/complete-subtask`;
@@ -69,6 +137,33 @@ async function completeSubtask(subtaskId: string): Promise<{ success: boolean; m
     }
   } catch (err) {
     console.error('Failed to complete subtask:', err);
+    return { success: false, message: (err as Error).message };
+  }
+}
+
+async function completeTask(taskId: string): Promise<{ success: boolean; message: string }> {
+  const config = await getConfig();
+  const url = `http://${config.androidIp}:${config.androidPort}/complete-task`;
+  console.log(`Completing task ${taskId} via Android Core at ${url}...`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ taskId })
+    });
+
+    if (response.ok) {
+      await syncEventsWithAndroid();
+      return { success: true, message: 'Task completed successfully.' };
+    } else {
+      throw new Error(`Server returned code ${response.status}`);
+    }
+  } catch (err) {
+    console.error('Failed to complete task:', err);
     return { success: false, message: (err as Error).message };
   }
 }
@@ -179,12 +274,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'BYPASS_DISTRACTION') {
-    const { url, domain, tabId } = message;
-    addBypass(tabId, domain).then(() => {
-      chrome.tabs.update(tabId, { url }).then(() => {
-        sendResponse({ success: true });
+    const { url, domain } = message;
+    const tabId = message.tabId || sender.tab?.id;
+    if (tabId) {
+      addBypass(tabId, domain).then(() => {
+        chrome.tabs.update(tabId, { url }).then(() => {
+          sendResponse({ success: true });
+        });
       });
-    });
+    } else {
+      sendResponse({ success: false });
+    }
     return true;
   }
 
@@ -192,6 +292,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const { subtaskId } = message;
     completeSubtask(subtaskId).then((result) => {
       sendResponse(result);
+    });
+    return true;
+  }
+
+  if (message.action === 'COMPLETE_TASK') {
+    const { taskId } = message;
+    completeTask(taskId).then((result) => {
+      sendResponse(result);
+    });
+    return true;
+  }
+
+  if (message.action === 'CLOSE_CURRENT_TAB') {
+    const tabId = sender.tab?.id;
+    if (tabId) {
+      chrome.tabs.remove(tabId);
+    }
+    return true;
+  }
+
+  if (message.action === 'DISCOVER_IP') {
+    discoverAndroidIp().then((ip) => {
+      sendResponse({ success: !!ip, ip });
     });
     return true;
   }
@@ -471,3 +594,43 @@ async function logSyncResult(message: string, isError = false) {
   
   await chrome.storage.local.set({ syncLogs: logs });
 }
+
+// Rapid status polling loop (every 3 seconds) to keep focus session states synchronized in real-time
+async function pollSyncStatus() {
+  try {
+    const config = await getConfig();
+    if (!config.cloudRelayEnabled && config.androidIp) {
+      const statusUrl = `http://${config.androidIp}:${config.androidPort}/status`;
+      const response = await fetch(statusUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        const appState = await response.json();
+        const currentStatus = await getStatus();
+        
+        if (currentStatus.isFocusSessionActive && !appState.isFocusSessionActive) {
+          console.log('Focus session ended. Clearing bypass cache.');
+          await clearBypasses();
+        }
+        
+        await chrome.storage.local.set({
+          isConnected: true,
+          activeTaskId: appState.activeTaskId || null,
+          activeTaskTitle: appState.activeTaskTitle || null,
+          activeTaskDescription: appState.activeTaskDescription || null,
+          pendingSubtasks: appState.pendingSubtasks || null,
+          isFocusSessionActive: appState.isFocusSessionActive || false,
+          lastSyncTime: new Date().toISOString(),
+        });
+      } else {
+        await chrome.storage.local.set({ isConnected: false });
+      }
+    }
+  } catch (e) {
+    // Ignore network failures during background polling
+  }
+}
+
+// Start polling loop
+setInterval(pollSyncStatus, 3000);

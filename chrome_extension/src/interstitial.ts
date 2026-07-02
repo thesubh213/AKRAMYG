@@ -9,9 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const taskDescEl = document.getElementById('task-desc')!;
   const nudgeContainer = document.getElementById('nudge-container')!;
   const nudgeStepEl = document.getElementById('nudge-step')!;
+  
   const btnDone = (document.getElementById('btn-done') as HTMLButtonElement)!;
+  const btnCompleteTask = (document.getElementById('btn-complete-task') as HTMLButtonElement)!;
   const btnFocus = (document.getElementById('btn-focus') as HTMLButtonElement)!;
   const linkBypass = document.getElementById('link-bypass')!;
+  
+  const distractionNotice = document.getElementById('distraction-notice')!;
+  const quoteEl = document.getElementById('interstitial-quote')!;
+
+  // Render distraction alert if domain is present
+  if (domain) {
+    distractionNotice.innerHTML = `⚠️ Blocked visit to <strong>${domain}</strong> during active focus!`;
+    distractionNotice.style.display = 'block';
+  }
 
   function refreshStatus() {
     chrome.runtime.sendMessage({ action: 'GET_STATUS' }, (status) => {
@@ -22,9 +33,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (status && status.isFocusSessionActive) {
-        taskTitleEl.textContent = status.activeTaskTitle || 'Unnamed Task';
+        const taskTitle = status.activeTaskTitle || 'Unnamed Task';
+        taskTitleEl.textContent = taskTitle;
         taskDescEl.textContent = status.activeTaskDescription || 'No details provided.';
         
+        // Personalize the quote nudge
+        quoteEl.innerHTML = `“Hey! Instead of checking <strong>${domain || 'distractions'}</strong>, how about we spend just 5 minutes on <strong>${taskTitle}</strong>?”`;
+
+        // Render whole task completion action
+        btnCompleteTask.style.display = 'block';
+        btnCompleteTask.onclick = () => {
+          btnCompleteTask.disabled = true;
+          btnCompleteTask.textContent = 'Completing Task...';
+          chrome.runtime.sendMessage({ action: 'COMPLETE_TASK', taskId: status.activeTaskId }, (response) => {
+            btnCompleteTask.disabled = false;
+            btnCompleteTask.textContent = '🎉 Completed: Mark Whole Task as Done';
+            if (response && response.success) {
+              refreshStatus();
+            } else {
+              alert('Could not complete task. Ensure the companion app is running.');
+            }
+          });
+        };
+
         const subtasks = status.pendingSubtasks || [];
         if (subtasks.length > 0) {
           const nextStep = subtasks[0];
@@ -39,23 +70,24 @@ document.addEventListener('DOMContentLoaded', () => {
               btnDone.disabled = false;
               btnDone.textContent = '✅ Completed: Mark Step as Done';
               if (response && response.success) {
-                // Reload status to show the next pending subtask
                 refreshStatus();
               } else {
-                alert('Could not complete subtask. Make sure the companion app is connected.');
+                alert('Could not complete subtask. Ensure the companion app is connected.');
               }
             });
           };
         } else {
-          nudgeStepEl.textContent = 'You have completed all execution steps! Take a moment to breathe or add a next step.';
+          nudgeStepEl.textContent = 'All checklist steps are done! Take a moment to breathe or mark the task complete.';
           nudgeContainer.style.display = 'block';
           btnDone.style.display = 'none';
         }
       } else {
         taskTitleEl.textContent = 'No Focus Session Active';
-        taskDescEl.textContent = 'No active task on your phone companion. Close this tab and get to work!';
+        taskDescEl.textContent = 'No focus task is active on your phone. Close this tab and get to work!';
+        quoteEl.innerHTML = `“Avoidance caught! Close this tab and keep pushing.”`;
         nudgeContainer.style.display = 'none';
         btnDone.style.display = 'none';
+        btnCompleteTask.style.display = 'none';
       }
     });
   }
@@ -63,35 +95,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial load
   refreshStatus();
 
-  // Focus Button handler: close the tab to focus
+  // Focus Button handler: close the tab using background script
   btnFocus.addEventListener('click', () => {
-    chrome.tabs.getCurrent((tab) => {
-      if (tab?.id) {
-        chrome.tabs.remove(tab.id);
-      } else {
-        window.close();
-      }
-    });
+    chrome.runtime.sendMessage({ action: 'CLOSE_CURRENT_TAB' });
   });
 
   // Bypass link handler: notify background of bypass and update tab url
   linkBypass.addEventListener('click', (e) => {
     e.preventDefault();
-    chrome.tabs.getCurrent((tab) => {
-      const tabId = tab?.id;
-      if (tabId) {
-        chrome.runtime.sendMessage({
-          action: 'BYPASS_DISTRACTION',
-          url: originalUrl,
-          domain: domain,
-          tabId: tabId
-        }, (response) => {
-          if (chrome.runtime.lastError || !response || !response.success) {
-            // Fallback navigation in case of error
-            window.location.href = originalUrl;
-          }
-        });
-      } else {
+    chrome.runtime.sendMessage({
+      action: 'BYPASS_DISTRACTION',
+      url: originalUrl,
+      domain: domain
+    }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.success) {
         window.location.href = originalUrl;
       }
     });

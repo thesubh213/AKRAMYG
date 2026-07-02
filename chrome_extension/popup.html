@@ -442,17 +442,23 @@
     <!-- Local Sync Settings -->
     <div class="card">
       <div style="font-size: 11px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Android Core Address</div>
-      <div class="form-row">
-        <div class="form-group" style="flex: 2;">
+      <div class="form-row" style="margin-bottom: 8px;">
+        <div class="form-group" style="flex: 2; margin-bottom: 0;">
           <label for="ip-address">IP Address</label>
           <input type="text" id="ip-address" placeholder="192.168.x.x">
         </div>
-        <div class="form-group" style="flex: 1;">
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
           <label for="port">Port</label>
           <input type="text" id="port" placeholder="8080" value="8080">
         </div>
       </div>
-      <button id="btn-save-settings" class="btn btn-secondary" style="margin-bottom: 0; padding: 8px;">Save & Reconnect</button>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 12px;">
+        <button id="btn-auto-discover" class="btn" style="padding: 6px 12px; font-size: 10px; margin: 0; background-color: var(--text); color: white; display: flex; align-items: center; gap: 4px; cursor: pointer; border: none; border-radius: 4px;">
+          <span>🔍 Auto-Detect IP</span>
+        </button>
+        <span id="discover-status" style="font-size: 10px; font-weight: 600; color: var(--text-muted);"></span>
+      </div>
+      <button id="btn-save-settings" class="btn btn-secondary" style="margin-bottom: 0; padding: 8px; width: 100%;">Save & Reconnect</button>
     </div>
 
     <!-- Cloud Relay Settings -->

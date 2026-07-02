@@ -223,8 +223,9 @@
     <div class="logo">AKRAMYG</div>
     <div class="card">
       <div class="status-badge">FOCUS SESSION ACTIVE</div>
+      <div id="distraction-notice" style="font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 12px; display: none;"></div>
       <h1>Pause & Breathe.</h1>
-      <div class="quote">
+      <div class="quote" id="interstitial-quote">
         "Catching the moment of avoidance, before it becomes an hour of it."
       </div>
       
@@ -242,6 +243,9 @@
       <div class="actions">
         <button class="btn btn-primary" id="btn-done" style="display: none;">
           ✅ Completed: Mark Step as Done
+        </button>
+        <button class="btn btn-outline" id="btn-complete-task" style="display: none; margin-top: 4px; font-weight: 700; border: 1px solid var(--success); color: var(--success); background: transparent;">
+          🎉 Completed: Mark Whole Task as Done
         </button>
         <button class="btn btn-secondary" id="btn-focus">
           🎯 I'll Focus On This Now (Close Tab)

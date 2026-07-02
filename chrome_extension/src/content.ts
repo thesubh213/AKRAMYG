@@ -62,10 +62,12 @@ function performDeadlineScan(): Array<{ title: string; date: string; sourceUrl: 
 
   // 1. LMS Canvas specific detection
   if (url.includes('canvas') || url.includes('instructure.com')) {
-    const assignmentRows = document.querySelectorAll('.student-assignment-row, .assignment');
+    const assignmentRows = document.querySelectorAll(
+      '.student-assignment-row, .assignment, .ig-row, .assignment-list-item, li.assignment'
+    );
     assignmentRows.forEach(row => {
-      const titleEl = row.querySelector('.title, .assignment_title');
-      const dueEl = row.querySelector('.due_date, .display_due_date, .due');
+      const titleEl = row.querySelector('.title, .assignment_title, .ig-title, a.ig-title, .assignment-title');
+      const dueEl = row.querySelector('.due_date, .display_due_date, .due, .due-date, span.due-date');
       if (titleEl && dueEl && titleEl.textContent && dueEl.textContent) {
         detectedDeadlines.push({
           title: `[Canvas] ${titleEl.textContent.trim()}`,
@@ -78,10 +80,10 @@ function performDeadlineScan(): Array<{ title: string; date: string; sourceUrl: 
 
   // 2. GitHub specific detection (Milestones or Issue lists)
   if (url.includes('github.com')) {
-    const milestoneItems = document.querySelectorAll('.milestone-card, .milestone');
+    const milestoneItems = document.querySelectorAll('.milestone-card, .milestone, .milestone-card-header, li.milestone');
     milestoneItems.forEach(item => {
-      const titleEl = item.querySelector('.milestone-title-link, a');
-      const dueEl = item.querySelector('.milestone-meta-item, span');
+      const titleEl = item.querySelector('.milestone-title-link, .milestone-title a, h2.milestone-title a, a');
+      const dueEl = item.querySelector('.milestone-meta-item, .milestone-meta, .due-date, span.due-date, span');
       if (titleEl && dueEl && titleEl.textContent && dueEl.textContent && dueEl.textContent.includes('Due')) {
         detectedDeadlines.push({
           title: `[GitHub Milestone] ${titleEl.textContent.trim()}`,
@@ -103,11 +105,21 @@ function performDeadlineScan(): Array<{ title: string; date: string; sourceUrl: 
     while ((match = pattern.exec(textSnippet)) !== null) {
       const extractedDate = match[1];
       const index = match.index;
-      const contextText = textSnippet.substring(Math.max(0, index - 80), index).trim();
-      const cleanContext = contextText.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ');
+      const contextText = textSnippet.substring(Math.max(0, index - 50), index).trim();
+      let cleanContext = contextText.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      cleanContext = cleanContext.replace(/^[^a-zA-Z0-9]+/, '');
+      
+      if (cleanContext.length > 50) {
+        cleanContext = '...' + cleanContext.substring(cleanContext.length - 47);
+      }
+      
+      if (cleanContext.length < 3) {
+        cleanContext = document.title || 'Page Deadline';
+      }
       
       detectedDeadlines.push({
-        title: `Extracted Deadline: "${cleanContext}"`,
+        title: `Deadline: "${cleanContext}"`,
         date: extractedDate.trim(),
         sourceUrl: url
       });

@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSummarize = document.getElementById('btn-summarize') as HTMLButtonElement;
   const btnSaveSettings = document.getElementById('btn-save-settings') as HTMLButtonElement;
   const btnSaveRelaySettings = document.getElementById('btn-save-relay-settings') as HTMLButtonElement;
+  const btnAutoDiscover = document.getElementById('btn-auto-discover') as HTMLButtonElement;
+  const discoverStatus = document.getElementById('discover-status') as HTMLElement;
 
   const inputIp = document.getElementById('ip-address') as HTMLInputElement;
   const inputPort = document.getElementById('port') as HTMLInputElement;
@@ -97,6 +99,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     );
+  });
+
+  // Auto-Discover IP Click Handler
+  btnAutoDiscover.addEventListener('click', () => {
+    btnAutoDiscover.disabled = true;
+    discoverStatus.textContent = 'Scanning local network...';
+    discoverStatus.style.color = 'var(--text-muted)';
+    
+    chrome.runtime.sendMessage({ action: 'DISCOVER_IP' }, (response) => {
+      btnAutoDiscover.disabled = false;
+      if (chrome.runtime.lastError) {
+        discoverStatus.textContent = 'Discovery failed.';
+        discoverStatus.style.color = 'var(--error)';
+        return;
+      }
+      if (response && response.success && response.ip) {
+        inputIp.value = response.ip;
+        discoverStatus.textContent = `Found server: ${response.ip}`;
+        discoverStatus.style.color = '#2E7D32'; // Green text color
+        
+        // Trigger save automatically
+        btnSaveSettings.click();
+      } else {
+        discoverStatus.textContent = 'Server not found on local network.';
+        discoverStatus.style.color = 'var(--error)';
+      }
+    });
   });
 
   // Save Relay Settings Click Handler

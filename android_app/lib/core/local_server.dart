@@ -202,6 +202,38 @@ class LocalSyncServer {
       }
     });
 
+    _router.post('/complete-task', (Request request) async {
+      try {
+        final payloadString = await request.readAsString();
+        final payload = jsonDecode(payloadString);
+        final String taskId = payload['taskId'] ?? '';
+
+        if (taskId.isEmpty) {
+          return Response.badRequest(
+            body: jsonEncode({'error': 'taskId is required'}),
+            headers: _corsHeaders(request),
+          );
+        }
+
+        await _db.execute(
+          "UPDATE tasks SET status = 'completed', updated_at = ? WHERE id = ?",
+          [DateTime.now().toIso8601String(), taskId]
+        );
+
+        _eventBus.publish(TaskUpdatedEvent({'id': taskId}));
+
+        return Response.ok(
+          jsonEncode({'success': true}),
+          headers: _corsHeaders(request),
+        );
+      } catch (e) {
+        return Response.internalServerError(
+          body: jsonEncode({'error': e.toString()}),
+          headers: _corsHeaders(request),
+        );
+      }
+    });
+
     // 4. GET /relay/<channel>
     _router.get('/relay/<channel>', (Request request, String channel) {
       final payload = _relayMailboxes.remove(channel);
