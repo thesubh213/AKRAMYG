@@ -5,7 +5,6 @@ import 'core/database.dart';
 import 'core/ai_client.dart';
 import 'core/decision_engine.dart';
 import 'core/memory_engine.dart';
-import 'core/event_bus.dart';
 import 'core/local_server.dart';
 import 'core/cloud_relay_service.dart';
 import 'ui/home_screen.dart';

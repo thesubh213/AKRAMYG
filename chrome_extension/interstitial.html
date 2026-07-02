@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pause & Redirect | AKRAMYG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F2EB;            /* Warm Beige */
+      --card-bg: #FAF8F5;       /* Pure Sand Beige */
+      --accent: #C05A3E;        /* Burnt Sienna */
+      --accent-hover: #A0442A;  /* Deep Terracotta */
+      --text: #2E2724;          /* Warm Earth Dark */
+      --text-muted: #8A7B76;    /* Muted Grey-Brown */
+      --success: #27AE60;       /* Forest Green */
+      --border: #EBE5DA;        /* Light Sand Border */
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--text), var(--accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(46, 39, 36, 0.06);
+      margin-bottom: 24px;
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .quote {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+
+    .divider {
+      height: 1px;
+      background-color: var(--border);
+      margin: 24px 0;
+    }
+
+    .task-section {
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .task-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .task-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .task-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .nudge-container {
+      background-color: rgba(192, 90, 62, 0.05);
+      border-left: 4px solid var(--accent);
+      padding: 16px;
+      border-radius: 4px 12px 12px 4px;
+      margin-top: 16px;
+    }
+
+    .nudge-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .nudge-step {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background-color: var(--success);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #219653;
+      transform: translateY(-0.5px);
+    }
+
+    .btn-secondary {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background-color: #FAF8F5;
+      border-color: var(--text-muted);
+    }
+
+    .bypass-link {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: underline;
+      cursor: pointer;
+      display: inline-block;
+      margin-top: 24px;
+      transition: color 0.2s ease;
+    }
+
+    .bypass-link:hover {
+      color: var(--accent);
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background-color: rgba(192, 90, 62, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">AKRAMYG</div>
+    <div class="card">
+      <div class="status-badge">FOCUS SESSION ACTIVE</div>
+      <h1>Pause & Breathe.</h1>
+      <div class="quote">
+        "Catching the moment of avoidance, before it becomes an hour of it."
+      </div>
+      
+      <div class="task-section" id="task-section">
+        <div class="task-label">Current Active Task</div>
+        <div class="task-title" id="task-title">Loading Active Task...</div>
+        <div class="task-desc" id="task-desc">Fetching details from your companion app.</div>
+        
+        <div class="nudge-container" id="nudge-container" style="display: none;">
+          <div class="nudge-title">Next Small Action (Micro-Productive Step)</div>
+          <div class="nudge-step" id="nudge-step">Loading step...</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-done" style="display: none;">
+          ✅ Completed: Mark Step as Done
+        </button>
+        <button class="btn btn-secondary" id="btn-focus">
+          🎯 I'll Focus On This Now (Close Tab)
+        </button>
+      </div>
+    </div>
+    
+    <div>
+      <span class="bypass-link" id="link-bypass">Bypass & continue to page anyway</span>
+    </div>
+  </div>
+  <script src="interstitial.js"></script>
+</body>
+</html>

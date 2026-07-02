@@ -15,7 +15,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
   List<Map<String, dynamic>> _insights = [];
   int _completedCount = 0;
-  int _totalSessions = 0;
   int _totalFocusMins = 0;
 
   @override
@@ -35,7 +34,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final sessionsResult = await _db.rawQuery(
       "SELECT COUNT(*) as count, SUM(actual_duration) as sum_duration FROM tasks WHERE actual_duration > 0"
     );
-    final totalSessions = sessionsResult.isNotEmpty ? sessionsResult.first['count'] as int : 0;
     final totalFocusMins = sessionsResult.isNotEmpty && sessionsResult.first['sum_duration'] != null
         ? sessionsResult.first['sum_duration'] as int
         : 0;
@@ -47,7 +45,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
     setState(() {
       _completedCount = completedCount;
-      _totalSessions = totalSessions;
       _totalFocusMins = totalFocusMins;
       _insights = insightsList;
     });

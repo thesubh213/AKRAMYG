@@ -14,7 +14,7 @@ if (!fs.existsSync(distDir)) {
 
 // Copy assets
 function copyAssets() {
-  const assets = ['manifest.json', 'popup.html'];
+  const assets = ['manifest.json', 'popup.html', 'interstitial.html'];
   assets.forEach(asset => {
     const srcPath = path.join(__dirname, asset);
     const destPath = path.join(distDir, asset);
@@ -34,7 +34,8 @@ async function run() {
     entryPoints: [
       'src/background.ts',
       'src/content.ts',
-      'src/popup.ts'
+      'src/popup.ts',
+      'src/interstitial.ts'
     ],
     bundle: true,
     outdir: 'dist',

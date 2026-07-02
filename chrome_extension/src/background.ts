@@ -23,8 +23,54 @@ interface AppStatus {
   isConnected: boolean;
   activeTaskId: string | null;
   activeTaskTitle: string | null;
+  activeTaskDescription: string | null;
+  pendingSubtasks: Array<{ id: string; title: string; order_index: number }> | null;
   isFocusSessionActive: boolean;
   lastSyncTime: string | null;
+}
+
+async function isBypassed(tabId: number, domain: string): Promise<boolean> {
+  const result = await chrome.storage.local.get('bypassedTabs');
+  const bypassed = result.bypassedTabs || {};
+  return bypassed[tabId] === domain;
+}
+
+async function addBypass(tabId: number, domain: string) {
+  const result = await chrome.storage.local.get('bypassedTabs');
+  const bypassed = result.bypassedTabs || {};
+  bypassed[tabId] = domain;
+  await chrome.storage.local.set({ bypassedTabs: bypassed });
+}
+
+async function clearBypasses() {
+  await chrome.storage.local.set({ bypassedTabs: {} });
+}
+
+async function completeSubtask(subtaskId: string): Promise<{ success: boolean; message: string }> {
+  const config = await getConfig();
+  const url = `http://${config.androidIp}:${config.androidPort}/complete-subtask`;
+  console.log(`Completing subtask ${subtaskId} via Android Core at ${url}...`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ subtaskId })
+    });
+
+    if (response.ok) {
+      await syncEventsWithAndroid();
+      return { success: true, message: 'Subtask completed successfully.' };
+    } else {
+      throw new Error(`Server returned code ${response.status}`);
+    }
+  } catch (err) {
+    console.error('Failed to complete subtask:', err);
+    return { success: false, message: (err as Error).message };
+  }
 }
 
 const DEFAULT_CONFIG: ExtensionConfig = {
@@ -131,6 +177,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (message.action === 'BYPASS_DISTRACTION') {
+    const { url, domain, tabId } = message;
+    addBypass(tabId, domain).then(() => {
+      chrome.tabs.update(tabId, { url }).then(() => {
+        sendResponse({ success: true });
+      });
+    });
+    return true;
+  }
+
+  if (message.action === 'COMPLETE_SUBTASK') {
+    const { subtaskId } = message;
+    completeSubtask(subtaskId).then((result) => {
+      sendResponse(result);
+    });
+    return true;
+  }
 });
 
 // Core logic functions
@@ -145,11 +209,13 @@ async function saveConfig(config: ExtensionConfig): Promise<boolean> {
 }
 
 async function getStatus(): Promise<AppStatus> {
-  const result = await chrome.storage.local.get(['isConnected', 'activeTaskId', 'activeTaskTitle', 'isFocusSessionActive', 'lastSyncTime']);
+  const result = await chrome.storage.local.get(['isConnected', 'activeTaskId', 'activeTaskTitle', 'activeTaskDescription', 'pendingSubtasks', 'isFocusSessionActive', 'lastSyncTime']);
   return {
     isConnected: result.isConnected || false,
     activeTaskId: result.activeTaskId || null,
     activeTaskTitle: result.activeTaskTitle || null,
+    activeTaskDescription: result.activeTaskDescription || null,
+    pendingSubtasks: result.pendingSubtasks || null,
     isFocusSessionActive: result.isFocusSessionActive || false,
     lastSyncTime: result.lastSyncTime || null,
   };
@@ -183,7 +249,7 @@ async function checkTabContext(tabId: number) {
     if (!tab.url) return;
 
     // Skip scanning browser system pages
-    if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:') || tab.url.startsWith('chrome-extension://')) {
       return;
     }
 
@@ -199,29 +265,38 @@ async function checkTabContext(tabId: number) {
       const isDistracted = distractionDomains.some(d => domain.includes(d));
 
       if (isDistracted) {
-        console.log('Distraction detected:', domain);
-        
-        // Track local count of distraction triggers
-        const stats = await chrome.storage.local.get('distractionCount');
-        const count = (stats.distractionCount || 0) + 1;
-        await chrome.storage.local.set({ distractionCount: count });
+        const bypassed = await isBypassed(tabId, domain);
+        if (!bypassed) {
+          console.log('Distraction detected:', domain, 'Redirecting to interstitial.');
+          
+          // Track local count of distraction triggers
+          const stats = await chrome.storage.local.get('distractionCount');
+          const count = (stats.distractionCount || 0) + 1;
+          await chrome.storage.local.set({ distractionCount: count });
 
-        // Maintain log of blocked sites
-        const logData = await chrome.storage.local.get('distractionLogs');
-        const logs: string[] = logData.distractionLogs || [];
-        logs.push(`${new Date().toLocaleTimeString()} - Blocked ${domain}`);
-        if (logs.length > 5) logs.shift();
-        await chrome.storage.local.set({ distractionLogs: logs });
+          // Maintain log of blocked sites
+          const logData = await chrome.storage.local.get('distractionLogs');
+          const logs: string[] = logData.distractionLogs || [];
+          logs.push(`${new Date().toLocaleTimeString()} - Blocked ${domain}`);
+          if (logs.length > 5) logs.shift();
+          await chrome.storage.local.set({ distractionLogs: logs });
 
-        await queueEvent({
-          type: 'distraction',
-          data: {
-            domain,
-            url: tab.url,
-            title: tab.title || '',
-            activeTask: status.activeTaskId
-          }
-        });
+          await queueEvent({
+            type: 'distraction',
+            data: {
+              domain,
+              url: tab.url,
+              title: tab.title || '',
+              activeTask: status.activeTaskId
+            }
+          });
+
+          // Redirect to interstitial page
+          const interstitialUrl = chrome.runtime.getURL('interstitial.html') + 
+            `?originalUrl=${encodeURIComponent(tab.url)}&domain=${encodeURIComponent(domain)}`;
+          chrome.tabs.update(tabId, { url: interstitialUrl });
+          return;
+        }
       }
     }
 
@@ -317,11 +392,20 @@ async function syncEventsWithAndroid(): Promise<{ success: boolean; message: str
 
     const appState = await statusResponse.json();
     
+    // Check if focus session status changed from active to inactive
+    const currentStatus = await getStatus();
+    if (currentStatus.isFocusSessionActive && !appState.isFocusSessionActive) {
+      console.log('Focus session ended. Clearing bypass cache.');
+      await clearBypasses();
+    }
+
     // Cache the status details locally
     await chrome.storage.local.set({
       isConnected: true,
       activeTaskId: appState.activeTaskId || null,
       activeTaskTitle: appState.activeTaskTitle || null,
+      activeTaskDescription: appState.activeTaskDescription || null,
+      pendingSubtasks: appState.pendingSubtasks || null,
       isFocusSessionActive: appState.isFocusSessionActive || false,
       lastSyncTime: new Date().toISOString(),
     });

@@ -35,7 +35,9 @@ class LocalSyncServer {
 
         String? activeTaskId;
         String? activeTaskTitle;
+        String? activeTaskDescription;
         bool isFocusActive = false;
+        List<Map<String, dynamic>> pendingSubtasks = [];
 
         if (activeSessions.isNotEmpty) {
           activeTaskId = activeSessions.first['task_id'] as String;
@@ -43,6 +45,11 @@ class LocalSyncServer {
           final task = await _db.queryById('tasks', activeTaskId);
           if (task != null) {
             activeTaskTitle = task['title'] as String;
+            activeTaskDescription = task['description'] as String?;
+            pendingSubtasks = await _db.rawQuery(
+              "SELECT id, title, order_index FROM subtasks WHERE task_id = ? AND status = 'pending' AND is_deleted = 0 ORDER BY order_index ASC",
+              [activeTaskId]
+            );
           }
         }
 
@@ -50,7 +57,9 @@ class LocalSyncServer {
           'isConnected': true,
           'activeTaskId': activeTaskId,
           'activeTaskTitle': activeTaskTitle,
+          'activeTaskDescription': activeTaskDescription,
           'isFocusSessionActive': isFocusActive,
+          'pendingSubtasks': pendingSubtasks,
           'serverTime': DateTime.now().toIso8601String()
         };
 
@@ -145,6 +154,44 @@ class LocalSyncServer {
 
         return Response.ok(
           jsonEncode({'summary': summary}),
+          headers: _corsHeaders(request),
+        );
+      } catch (e) {
+        return Response.internalServerError(
+          body: jsonEncode({'error': e.toString()}),
+          headers: _corsHeaders(request),
+        );
+      }
+    });
+
+    // 3b. Complete subtask route
+    _router.post('/complete-subtask', (Request request) async {
+      try {
+        final payloadString = await request.readAsString();
+        final payload = jsonDecode(payloadString);
+        final String subtaskId = payload['subtaskId'] ?? '';
+
+        if (subtaskId.isEmpty) {
+          return Response.badRequest(
+            body: jsonEncode({'error': 'subtaskId is required'}),
+            headers: _corsHeaders(request),
+          );
+        }
+
+        await _db.execute(
+          "UPDATE subtasks SET status = 'completed', updated_at = ? WHERE id = ?",
+          [DateTime.now().toIso8601String(), subtaskId]
+        );
+
+        // Fetch task_id of this subtask to fire TaskUpdatedEvent
+        final subtask = await _db.queryById('subtasks', subtaskId);
+        if (subtask != null) {
+          final taskId = subtask['task_id'] as String;
+          _eventBus.publish(TaskUpdatedEvent({'id': taskId}));
+        }
+
+        return Response.ok(
+          jsonEncode({'success': true}),
           headers: _corsHeaders(request),
         );
       } catch (e) {

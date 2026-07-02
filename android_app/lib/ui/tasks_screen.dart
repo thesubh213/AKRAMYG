@@ -1,12 +1,10 @@
 // tasks_screen.dart for AKRAMYG Task Management UI
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/database.dart';
 import '../core/ai_client.dart';
 import '../core/decision_engine.dart';
 import '../core/event_bus.dart';
-import '../core/ai_models.dart';
 
 class TasksScreen extends StatefulWidget {
   final DecisionEngine decisionEngine;
@@ -266,7 +264,6 @@ class _TasksScreenState extends State<TasksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
     final cardColor = Theme.of(context).cardColor;
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
     final textColor = Theme.of(context).colorScheme.onSurface;
